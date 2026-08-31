@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Astra Metrics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegação principal">
+        <a class="brand" href="#overview" aria-label="Astra Metrics">
+          <span class="brand-mark">A</span>
+          <span>
+            <strong>AstraBot</strong>
+            <small>Métricas</small>
+          </span>
+        </a>
+
+        <nav class="nav-list">
+          <a class="nav-item active" href="#overview" data-section-link="overview">
+            <span class="icon" aria-hidden="true">⌁</span>
+            Visão geral
+          </a>
+          <a class="nav-item" href="#commands" data-section-link="commands">
+            <span class="icon" aria-hidden="true">⌘</span>
+            Comandos
+          </a>
+          <a class="nav-item" href="#partnerships" data-section-link="partnerships">
+            <span class="icon" aria-hidden="true">↗</span>
+            Parcerias
+          </a>
+          <a class="nav-item" href="#blacklist" data-section-link="blacklist">
+            <span class="icon" aria-hidden="true">!</span>
+            Blacklist
+          </a>
+          <a class="nav-item" href="#servers" data-section-link="servers">
+            <span class="icon" aria-hidden="true">◇</span>
+            Servidores
+          </a>
+          <a class="nav-item" href="#pipeline" data-section-link="pipeline">
+            <span class="icon" aria-hidden="true">≋</span>
+            Eventos
+          </a>
+        </nav>
+
+        <div class="sidebar-panel">
+          <span class="status-dot"></span>
+          <div>
+            <strong id="connectionTitle">Carregando</strong>
+            <small id="connectionMeta">Verificando sessão</small>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section class="login-wall" id="loginWall" hidden>
+          <div class="login-box">
+            <span class="brand-mark">A</span>
+            <p class="eyebrow">Acesso protegido</p>
+            <h1>Entre com Discord</h1>
+            <p>Use uma conta Discord autorizada para acessar as métricas reais do AstraBot.</p>
+            <a class="login-button" href="/api/auth/login">Entrar com Discord</a>
+            <small id="loginHint"></small>
+          </div>
+        </section>
+
+        <header class="topbar">
+          <div>
+            <h1>Bot - AstraBot</h1>
+            <span class="updated-at" id="updatedAt">Aguardando dados</span>
+          </div>
+          <div class="topbar-controls">
+            <div class="user-chip" id="userChip" hidden>
+              <span class="user-avatar" id="userAvatar">A</span>
+              <span id="userName">Astra</span>
+              <a href="/api/auth/logout" title="Sair">Sair</a>
+            </div>
+            <div class="topbar-actions" aria-label="Selecionar período">
+              <button class="period-btn active" type="button" data-period="7d">7d</button>
+              <button class="period-btn" type="button" data-period="30d">30d</button>
+              <button class="period-btn" type="button" data-period="90d">90d</button>
+            </div>
+          </div>
+        </header>
+
+        <div class="dashboard-toolbar">
+          <button class="toolbar-select" type="button">No date range override</button>
+          <button class="toolbar-select" type="button">grouped by each insight interval</button>
+          <button class="toolbar-button" type="button">+ Filter</button>
+          <button class="toolbar-button" type="button">+ Breakdown</button>
+          <button class="toolbar-button refresh-inline" type="button" id="refreshInlineButton">Refresh</button>
+        </div>
+
+        <div class="notice" id="sourceNotice" hidden></div>
+
+        <section id="overview" class="section board-section">
+          <div class="board-title">
+            <h2>Resumo</h2>
+            <button class="ghost-button" type="button" id="refreshButton">Atualizar</button>
+          </div>
+          <div class="metric-grid" id="metricCards"></div>
+
+          <div class="content-grid">
+            <article class="panel insight-panel wide">
+              <div class="panel-head">
+                <div>
+                  <h2>Eventos capturados</h2>
+                  <p>Volume diário de eventos enviados pelo bot no período selecionado.</p>
+                </div>
+                <span class="menu-dot">...</span>
+              </div>
+              <div class="chart-wrap">
+                <svg id="eventsChart" viewBox="0 0 920 300" role="img" aria-label="Gráfico de eventos por dia"></svg>
+              </div>
+            </article>
+
+            <article class="panel insight-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Status operacional</h2>
+                  <p>Estado da coleta, sessão e API que servem este painel.</p>
+                </div>
+                <span class="menu-dot">...</span>
+              </div>
+              <div class="health-list" id="healthList"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="commands" class="section board-section">
+          <div class="section-title">
+            <div>
+              <h2>Comandos do bot</h2>
+              <p>Ranking de uso e falhas por comando executado no Discord.</p>
+            </div>
+            <span class="menu-dot">...</span>
+          </div>
+          <div class="command-layout">
+            <article class="panel insight-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Comandos por nome</h2>
+                  <p>command_executed por nome, ordenado por volume.</p>
+                </div>
+                <span class="menu-dot">...</span>
+              </div>
+              <div id="commandBars" class="bars"></div>
+            </article>
+            <article class="panel insight-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Falhas por comando</h2>
+                  <p>Comandos que voltaram status de erro no período.</p>
+                </div>
+                <span class="menu-dot">...</span>
+              </div>
+              <div id="errorList" class="compact-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="partnerships" class="section board-section">
+          <div class="section-title">
+            <div>
+              <h2>Funil de parcerias</h2>
+              <p>Da abertura do modal ao envio, cancelamento ou bloqueio pela blacklist.</p>
+            </div>
+            <span class="menu-dot">...</span>
+          </div>
+          <div class="funnel" id="funnel"></div>
+        </section>
+
+        <section id="blacklist" class="section board-section">
+          <div class="section-title">
+            <div>
+              <h2>Blacklist e bloqueios</h2>
+              <p>Motivos e tipos que impedem envio de parceria.</p>
+            </div>
+            <span class="menu-dot">...</span>
+          </div>
+          <div class="content-grid">
+            <article class="panel insight-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Motivos de bloqueio</h2>
+                  <p>reason_category em partnership_blocked.</p>
+                </div>
+                <span class="menu-dot">...</span>
+              </div>
+              <div id="blacklistReasons" class="compact-list"></div>
+            </article>
+            <article class="panel insight-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Tipos detectados</h2>
+                  <p>Distribuição por blocked_type.</p>
+                </div>
+                <span class="menu-dot">...</span>
+              </div>
+              <div class="donut-row">
+                <svg id="blacklistDonut" viewBox="0 0 220 220" role="img" aria-label="Distribuição de bloqueios"></svg>
+                <div id="blacklistLegend" class="legend"></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="servers" class="section board-section">
+          <div class="section-title">
+            <div>
+              <h2>Servidores ativos</h2>
+              <p>Guilds com comandos, parcerias e bloqueios recentes.</p>
+            </div>
+            <span class="menu-dot">...</span>
+          </div>
+          <div class="server-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Servidor</th>
+                  <th>Status</th>
+                  <th>Comandos</th>
+                  <th>Parcerias</th>
+                  <th>Bloqueios</th>
+                </tr>
+              </thead>
+              <tbody id="serverRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="pipeline" class="section board-section">
+          <div class="section-title">
+            <div>
+              <h2>Eventos coletados</h2>
+              <p>Catálogo de eventos que alimentam o painel, sem IDs crus nem conteúdo sensível.</p>
+            </div>
+            <span class="menu-dot">...</span>
+          </div>
+          <div id="eventCatalog" class="event-grid"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
