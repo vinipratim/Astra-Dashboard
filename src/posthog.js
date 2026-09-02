@@ -17,9 +17,17 @@ function intervalSql(range) {
   return `timestamp >= now() - interval ${ranges.get(safeRange(range))} day`;
 }
 
+function sqlString(value) {
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+function eventCatalogSqlList() {
+  return eventCatalog.map(([event]) => sqlString(event)).join(", ");
+}
+
 async function posthogQuery(query, name, requestId) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), env.POSTHOG_QUERY_TIMEOUT_MS);
 
   try {
     const response = await fetch(`${env.POSTHOG_HOST}/api/projects/${env.POSTHOG_PROJECT_ID}/query/`, {
@@ -51,6 +59,27 @@ async function posthogQuery(query, name, requestId) {
   }
 }
 
+async function posthogQueryOrEmpty(query, name, requestId) {
+  try {
+    return {
+      rows: await posthogQuery(query, name, requestId),
+      error: null,
+    };
+  } catch (error) {
+    logger.warn({
+      event: "posthog_query_part_failed",
+      requestId,
+      queryName: name,
+      error: error.message,
+    }, "posthog query part failed");
+
+    return {
+      rows: [],
+      error: error.message,
+    };
+  }
+}
+
 function toNumber(value) {
   const parsed = Number(value || 0);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -79,17 +108,8 @@ async function getMetrics(range, requestId) {
 
   try {
     const where = intervalSql(safe);
-    const [
-      totalsRows,
-      seriesRows,
-      commandRows,
-      commandErrorRows,
-      funnelRows,
-      blacklistTypeRows,
-      blacklistReasonRows,
-      serverRows,
-    ] = await Promise.all([
-      posthogQuery(`
+    const results = await Promise.all([
+      posthogQueryOrEmpty(`
         select event, count()
         from events
         where ${where}
@@ -102,14 +122,15 @@ async function getMetrics(range, requestId) {
           )
         group by event
       `, `astra totals ${safe}`, requestId),
-      posthogQuery(`
+      posthogQueryOrEmpty(`
         select toDate(timestamp) as day, count()
         from events
         where ${where}
+          and event in (${eventCatalogSqlList()})
         group by day
         order by day asc
       `, `astra series ${safe}`, requestId),
-      posthogQuery(`
+      posthogQueryOrEmpty(`
         select properties.command as command, count()
         from events
         where ${where}
@@ -119,7 +140,7 @@ async function getMetrics(range, requestId) {
         order by count() desc
         limit 10
       `, `astra commands ${safe}`, requestId),
-      posthogQuery(`
+      posthogQueryOrEmpty(`
         select properties.command as command, count()
         from events
         where ${where}
@@ -128,7 +149,7 @@ async function getMetrics(range, requestId) {
           and properties.command is not null
         group by command
       `, `astra command errors ${safe}`, requestId),
-      posthogQuery(`
+      posthogQueryOrEmpty(`
         select event, count()
         from events
         where ${where}
@@ -141,7 +162,7 @@ async function getMetrics(range, requestId) {
           )
         group by event
       `, `astra partnership funnel ${safe}`, requestId),
-      posthogQuery(`
+      posthogQueryOrEmpty(`
         select properties.blocked_type as type, count()
         from events
         where ${where}
@@ -150,7 +171,7 @@ async function getMetrics(range, requestId) {
         group by type
         order by count() desc
       `, `astra blacklist types ${safe}`, requestId),
-      posthogQuery(`
+      posthogQueryOrEmpty(`
         select properties.reason_category as reason, count()
         from events
         where ${where}
@@ -160,7 +181,14 @@ async function getMetrics(range, requestId) {
         order by count() desc
         limit 8
       `, `astra blacklist reasons ${safe}`, requestId),
-      posthogQuery(`
+      posthogQueryOrEmpty(`
+        select count(distinct properties.guild_hash)
+        from events
+        where ${where}
+          and event in (${eventCatalogSqlList()})
+          and properties.guild_hash is not null
+      `, `astra active guild count ${safe}`, requestId),
+      posthogQueryOrEmpty(`
         select
           properties.guild_hash as guild,
           countIf(event = 'command_executed') as commands,
@@ -175,6 +203,24 @@ async function getMetrics(range, requestId) {
       `, `astra guilds ${safe}`, requestId),
     ]);
 
+    const errors = results.filter((result) => result.error);
+
+    if (errors.length === results.length) {
+      throw new Error(errors[0]?.error || "Todas as consultas ao PostHog falharam.");
+    }
+
+    const [
+      totalsRows,
+      seriesRows,
+      commandRows,
+      commandErrorRows,
+      funnelRows,
+      blacklistTypeRows,
+      blacklistReasonRows,
+      activeGuildRows,
+      serverRows,
+    ] = results.map((result) => result.rows);
+
     const totals = rowMap(totalsRows);
     const commandErrors = rowMap(commandErrorRows);
     const funnelTotals = rowMap(funnelRows);
@@ -182,17 +228,18 @@ async function getMetrics(range, requestId) {
     const blockedTotal = totals.get("partnership_blocked") || 0;
     const blacklistRawTotal = blacklistTypeRows.reduce((sum, row) => sum + toNumber(row[1]), 0);
     const joined = totals.get("guild_joined") || 0;
-    const left = totals.get("guild_left") || 0;
+    const activeGuilds = toNumber(activeGuildRows[0]?.[0]);
 
     return {
-      source: "posthog",
+      source: errors.length ? "posthog_partial" : "posthog",
+      error: errors.length ? "Algumas consultas ao PostHog falharam temporariamente. Exibindo dados reais parciais." : null,
       range: safe,
       updatedAt: new Date().toISOString(),
       metrics: [
         { label: "Comandos", value: totals.get("command_executed") || 0, trend: "PostHog", icon: "⌘" },
         { label: "Parcerias", value: totals.get("partnership_sent") || 0, trend: "enviadas", icon: "↗" },
         { label: "Bloqueios", value: blockedTotal, trend: blockedTotal > 0 ? "monitorar" : "limpo", icon: "!" },
-        { label: "Guilds", value: Math.max(0, joined - left), trend: `${joined} entradas`, icon: "◇" },
+        { label: "Guilds", value: activeGuilds, trend: `${joined} entradas`, icon: "◇" },
       ],
       events: {
         labels: seriesRows.map((row) => formatDayLabel(row[0])),

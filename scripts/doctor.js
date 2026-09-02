@@ -14,6 +14,7 @@ function addCheck(name, ok, message) {
 
 addCheck("NODE_ENV", env.NODE_ENV === "production", `atual: ${env.NODE_ENV}`);
 addCheck("BASE_URL", /^https:\/\//.test(env.BASE_URL), `atual: ${env.BASE_URL}`);
+addCheck("Discord redirect HTTPS", !env.DISCORD_REDIRECT_URI || /^https:\/\//.test(env.DISCORD_REDIRECT_URI), `atual: ${getRedirectUri()}`);
 addCheck("SESSION_SECRET", env.SESSION_SECRET.length >= 32, "use uma string longa e aleatória");
 addCheck("Discord OAuth", isDiscordConfigured(), "configure DISCORD_CLIENT_ID e DISCORD_CLIENT_SECRET");
 addCheck("Usuários permitidos", env.ALLOWED_DISCORD_USER_IDS.length > 0, "configure ALLOWED_DISCORD_USER_IDS");

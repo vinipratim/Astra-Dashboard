@@ -2,6 +2,27 @@ let currentMetrics = null;
 let currentPeriod = "7d";
 
 const formatNumber = (value) => new Intl.NumberFormat("pt-BR").format(Number(value || 0));
+const htmlEscapes = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  "\"": "&quot;",
+  "'": "&#39;",
+};
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => htmlEscapes[char]);
+}
+
+function clampPercent(value) {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(parsed, 100)) : 0;
+}
+
+function safeColor(value) {
+  const color = String(value || "");
+  return /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : "#81867f";
+}
 
 function setConnection(title, meta, danger = false) {
   document.querySelector("#connectionTitle").textContent = title;
@@ -18,9 +39,11 @@ function setNotice(metrics) {
   }
 
   notice.hidden = false;
-  notice.textContent = metrics.source === "posthog_error"
-    ? metrics.error || "PostHog indisponível. Exibindo dados demo."
-    : "PostHog ainda não configurado. Exibindo dados demo para prévia do painel.";
+  notice.textContent = metrics.source === "posthog_partial"
+    ? metrics.error || "PostHog retornou dados reais parciais."
+    : metrics.source === "posthog_error"
+      ? metrics.error || "PostHog indisponível. Exibindo dados demo."
+      : "PostHog ainda não configurado. Exibindo dados demo para prévia do painel.";
 }
 
 function setUpdatedAt(metrics) {
@@ -145,11 +168,11 @@ function renderMetricCards() {
     .map(({ label, value, trend }) => `
       <article class="metric-card">
         <div class="metric-top">
-          <span>${label}</span>
+          <span>${escapeHtml(label)}</span>
           <span class="metric-icon">total</span>
         </div>
         <div class="metric-value">${formatNumber(value)}</div>
-        <span class="trend ${String(trend).startsWith("-") ? "down" : ""}">${trend}</span>
+        <span class="trend ${String(trend).startsWith("-") ? "down" : ""}">${escapeHtml(trend)}</span>
       </article>
     `)
     .join("");
@@ -191,7 +214,7 @@ function renderLineChart() {
     <polyline points="${line}" fill="none" stroke="#173ea5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
     ${points.map(([x, y, value], index) => `
       <circle cx="${x}" cy="${y}" r="3" fill="#fff" stroke="#173ea5" stroke-width="2" />
-      <text x="${x}" y="${height - 10}" text-anchor="middle" fill="#5e625d" font-size="11">${labels[index] || ""}</text>
+      <text x="${x}" y="${height - 10}" text-anchor="middle" fill="#5e625d" font-size="11">${escapeHtml(labels[index] || "")}</text>
     `).join("")}
   `;
 }
@@ -201,10 +224,10 @@ function renderHealth() {
     .map(({ name, state, meta }) => `
       <div class="health-item">
         <div>
-          <strong>${name}</strong>
-          <div class="muted">${meta}</div>
+          <strong>${escapeHtml(name)}</strong>
+          <div class="muted">${escapeHtml(meta)}</div>
         </div>
-        <span class="status-badge ${state === "demo" || state === "memory" ? "warn" : ""}">${state}</span>
+        <span class="status-badge ${state === "demo" || state === "memory" ? "warn" : ""}">${escapeHtml(state)}</span>
       </div>
     `)
     .join("");
@@ -217,10 +240,10 @@ function renderCommands() {
     ? commands.map(({ name, total }) => `
       <div class="bar-row">
         <div class="bar-meta">
-          <strong>${name}</strong>
+          <strong>${escapeHtml(name)}</strong>
           <span class="muted">${formatNumber(total)} usos</span>
         </div>
-        <div class="bar-track"><div class="bar-fill" style="width: ${(total / max) * 100}%"></div></div>
+        <div class="bar-track"><div class="bar-fill" style="width: ${clampPercent((total / max) * 100)}%"></div></div>
       </div>
     `).join("")
     : `<div class="list-item"><strong>Sem comandos no período</strong><span class="muted">0 usos</span></div>`;
@@ -229,7 +252,7 @@ function renderCommands() {
   document.querySelector("#errorList").innerHTML = errors.length
     ? errors.map(({ name, errors: total }) => `
       <div class="list-item">
-        <strong>${name}</strong>
+        <strong>${escapeHtml(name)}</strong>
         <span class="status-badge warn">${total} erro${total > 1 ? "s" : ""}</span>
       </div>
     `).join("")
@@ -240,10 +263,10 @@ function renderFunnel() {
   document.querySelector("#funnel").innerHTML = currentMetrics.funnel
     .map(({ label, total, percent }) => `
       <article class="funnel-step">
-        <strong>${label}</strong>
+        <strong>${escapeHtml(label)}</strong>
         <b>${formatNumber(total)}</b>
-        <span class="muted">${percent}% do início</span>
-        <div class="funnel-meter"><span style="width: ${Math.max(0, Math.min(percent, 100))}%"></span></div>
+        <span class="muted">${formatNumber(clampPercent(percent))}% do início</span>
+        <div class="funnel-meter"><span style="width: ${clampPercent(percent)}%"></span></div>
       </article>
     `)
     .join("");
@@ -253,7 +276,7 @@ function renderBlacklist() {
   document.querySelector("#blacklistReasons").innerHTML = currentMetrics.blacklistReasons.length
     ? currentMetrics.blacklistReasons.map(({ reason, total }) => `
       <div class="list-item">
-        <strong>${reason}</strong>
+        <strong>${escapeHtml(reason)}</strong>
         <span>${formatNumber(total)}</span>
       </div>
     `).join("")
@@ -269,9 +292,9 @@ function renderBlacklist() {
   document.querySelector("#blacklistDonut").innerHTML = `
     <circle cx="110" cy="110" r="${radius}" fill="none" stroke="#ecece7" stroke-width="28" />
     ${types.map(({ value, color }) => {
-      const length = (value / 100) * circumference;
+      const length = (clampPercent(value) / 100) * circumference;
       const dash = `${length} ${circumference - length}`;
-      const circle = `<circle cx="110" cy="110" r="${radius}" fill="none" stroke="${color}" stroke-width="28" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 110 110)" />`;
+      const circle = `<circle cx="110" cy="110" r="${radius}" fill="none" stroke="${safeColor(color)}" stroke-width="28" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 110 110)" />`;
       offset += length;
       return circle;
     }).join("")}
@@ -282,8 +305,8 @@ function renderBlacklist() {
   document.querySelector("#blacklistLegend").innerHTML = types
     .map(({ type, value, color }) => `
       <div class="legend-item">
-        <span><i class="legend-swatch" style="background:${color}"></i> ${type}</span>
-        <strong>${value}%</strong>
+        <span><i class="legend-swatch" style="background:${safeColor(color)}"></i> ${escapeHtml(type)}</span>
+        <strong>${formatNumber(clampPercent(value))}%</strong>
       </div>
     `)
     .join("");
@@ -294,9 +317,9 @@ function renderServers() {
     ? currentMetrics.servers.map(({ name, status, commands, partnerships, blocks }) => `
       <tr>
         <td>
-          <span class="server-name"><span class="server-avatar">${name[0]}</span>${name}</span>
+          <span class="server-name"><span class="server-avatar">${escapeHtml(String(name || "A").slice(0, 1))}</span>${escapeHtml(name)}</span>
         </td>
-        <td><span class="status-badge ${status === "Atenção" ? "warn" : ""}">${status}</span></td>
+        <td><span class="status-badge ${status === "Atenção" ? "warn" : ""}">${escapeHtml(status)}</span></td>
         <td>${formatNumber(commands)}</td>
         <td>${formatNumber(partnerships)}</td>
         <td>${formatNumber(blocks)}</td>
@@ -309,8 +332,8 @@ function renderEventCatalog() {
   document.querySelector("#eventCatalog").innerHTML = currentMetrics.eventCatalog
     .map(([event, description]) => `
       <article class="event-card">
-        <code>${event}</code>
-        <p>${description}</p>
+        <code>${escapeHtml(event)}</code>
+        <p>${escapeHtml(description)}</p>
       </article>
     `)
     .join("");

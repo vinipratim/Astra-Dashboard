@@ -81,6 +81,7 @@ const env = {
   POSTHOG_HOST: (process.env.POSTHOG_HOST || "https://us.posthog.com").replace(/\/+$/, ""),
   POSTHOG_PROJECT_ID: process.env.POSTHOG_PROJECT_ID || "",
   POSTHOG_PERSONAL_API_KEY: process.env.POSTHOG_PERSONAL_API_KEY || "",
+  POSTHOG_QUERY_TIMEOUT_MS: number("POSTHOG_QUERY_TIMEOUT_MS", 30000),
   AUTH_REQUIRED: boolean("AUTH_REQUIRED", true),
 };
 
@@ -105,6 +106,14 @@ function validateRuntimeConfig() {
 
   if (env.NODE_ENV === "production" && !env.BASE_URL.startsWith("https://")) {
     errors.push("BASE_URL deve ser a URL publica HTTPS do dashboard em produção.");
+  }
+
+  if (env.NODE_ENV === "production" && env.DISCORD_REDIRECT_URI && !env.DISCORD_REDIRECT_URI.startsWith("https://")) {
+    errors.push("DISCORD_REDIRECT_URI deve ser HTTPS em produção.");
+  }
+
+  if (env.NODE_ENV === "production" && !env.AUTH_REQUIRED) {
+    errors.push("AUTH_REQUIRED=false nao deve ser usado em produção.");
   }
 
   if (env.AUTH_REQUIRED && !isDiscordConfigured()) {

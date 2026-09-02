@@ -77,7 +77,12 @@ function parseCookies(header) {
         return cookies;
       }
 
-      cookies[item.slice(0, separator)] = decodeURIComponent(item.slice(separator + 1));
+      try {
+        cookies[item.slice(0, separator)] = decodeURIComponent(item.slice(separator + 1));
+      } catch {
+        cookies[item.slice(0, separator)] = "";
+      }
+
       return cookies;
     }, {});
 }

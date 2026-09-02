@@ -1,4 +1,5 @@
 const eventCatalog = [
+  ["bot_started", "Processo do bot iniciou com guild_count, command_count e shard_id."],
   ["command_executed", "Comando usado, duração, status, guild_hash e user_hash."],
   ["command_rate_limited", "Usuário bateu cooldown em um comando."],
   ["partnership_modal_opened", "Usuário abriu o modal de parceria."],
@@ -6,8 +7,10 @@ const eventCatalog = [
   ["partnership_sent", "Parceria enviada no canal configurado."],
   ["partnership_blocked", "Blacklist impediu envio com tipo bloqueado."],
   ["partnership_invalid_link", "Modal enviado com link fora do padrão aceito."],
+  ["partnership_invalid_color", "Modal enviado com cor fora do padrão hexadecimal aceito."],
   ["blacklist_item_added", "Admin adicionou item na blacklist."],
   ["blacklist_item_removed", "Admin removeu item da blacklist."],
+  ["blacklist_checked", "Admin consultou se um item estava presente na blacklist."],
   ["config_updated", "Canal, cargo, cor ou ping automático foi alterado."],
   ["guild_joined", "Bot entrou em um novo servidor."],
   ["guild_left", "Bot saiu de um servidor."],

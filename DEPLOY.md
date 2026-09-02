@@ -1,4 +1,4 @@
-# Deploy do Astra Metrics
+# Deploy do Astra Dashboard
 
 ## Tokens e segredos
 
@@ -45,7 +45,7 @@ O valor precisa ser exatamente igual ao `DISCORD_REDIRECT_URI`.
 O projeto tem `Dockerfile`, entao o Railway consegue subir como container.
 
 1. Crie um novo projeto pelo GitHub.
-2. Selecione o repositorio do `Astra-Site`.
+2. Selecione `viniprati/Astra-Dashboard`.
 3. Configure as variaveis de ambiente.
 4. Gere ou conecte um dominio.
 5. Atualize `BASE_URL` e `DISCORD_REDIRECT_URI` com a URL final.
@@ -54,7 +54,7 @@ O projeto tem `Dockerfile`, entao o Railway consegue subir como container.
 
 O projeto tem `render.yaml` para Blueprint.
 
-1. Crie um Blueprint no Render usando o repositorio.
+1. Crie um Blueprint no Render usando `viniprati/Astra-Dashboard`.
 2. Preencha as variaveis marcadas como secret/sync manual.
 3. Configure `BASE_URL` com a URL publica.
 4. Configure o mesmo redirect no Discord Developer Portal.

@@ -35,8 +35,25 @@ const contentTypes = {
   ".ico": "image/x-icon",
 };
 
+const securityHeaders = {
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src https://fonts.gstatic.com",
+    "img-src 'self' https://cdn.discordapp.com data:",
+    "connect-src 'self'",
+    "base-uri 'none'",
+    "frame-ancestors 'none'",
+  ].join("; "),
+  "Referrer-Policy": "same-origin",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+};
+
 function sendJson(res, statusCode, payload, headers = {}) {
   res.writeHead(statusCode, {
+    ...securityHeaders,
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
     ...headers,
@@ -46,6 +63,7 @@ function sendJson(res, statusCode, payload, headers = {}) {
 
 function redirect(res, location, headers = {}) {
   res.writeHead(302, {
+    ...securityHeaders,
     Location: location,
     "Cache-Control": "no-store",
     ...headers,
@@ -55,7 +73,15 @@ function redirect(res, location, headers = {}) {
 
 function getSafePath(urlPathname) {
   const requestedPath = urlPathname === "/" ? "/index.html" : urlPathname;
-  const normalized = path.normalize(decodeURIComponent(requestedPath)).replace(/^(\.\.[/\\])+/, "");
+  let decodedPath;
+
+  try {
+    decodedPath = decodeURIComponent(requestedPath);
+  } catch {
+    return null;
+  }
+
+  const normalized = path.normalize(decodedPath).replace(/^(\.\.[/\\])+/, "");
   const fullPath = path.join(publicDir, normalized);
 
   return fullPath.startsWith(publicDir) ? fullPath : path.join(publicDir, "index.html");
@@ -63,11 +89,18 @@ function getSafePath(urlPathname) {
 
 async function serveStatic(req, res, pathname) {
   const filePath = getSafePath(pathname);
+
+  if (!filePath) {
+    sendJson(res, 404, { ok: false, error: "not_found" });
+    return;
+  }
+
   const ext = path.extname(filePath);
 
   try {
     const content = await fs.readFile(filePath);
     res.writeHead(200, {
+      ...securityHeaders,
       "Content-Type": contentTypes[ext] || "application/octet-stream",
       "Cache-Control": ext === ".html" ? "no-store" : "public, max-age=3600",
     });
@@ -106,7 +139,7 @@ function getDiscordAvatarUrl(user) {
     return null;
   }
 
-  return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`;
+  return `https://cdn.discordapp.com/avatars/${encodeURIComponent(user.id)}/${encodeURIComponent(user.avatar)}.png?size=128`;
 }
 
 function getLoginUrl(state) {
@@ -116,7 +149,6 @@ function getLoginUrl(state) {
     scope: "identify",
     state,
     redirect_uri: getRedirectUri(),
-    prompt: "none",
   });
 
   return `https://discord.com/oauth2/authorize?${params.toString()}`;
