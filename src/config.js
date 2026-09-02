@@ -69,10 +69,22 @@ function splitList(value) {
 
 loadDotEnv();
 
+function defaultBaseUrl() {
+  if (process.env.BASE_URL) {
+    return process.env.BASE_URL;
+  }
+
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  return `http://localhost:${number("PORT", 3000)}`;
+}
+
 const env = {
   NODE_ENV: process.env.NODE_ENV || "development",
   PORT: number("PORT", 3000),
-  BASE_URL: process.env.BASE_URL || `http://localhost:${number("PORT", 3000)}`,
+  BASE_URL: defaultBaseUrl(),
   DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID || "",
   DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET || "",
   DISCORD_REDIRECT_URI: process.env.DISCORD_REDIRECT_URI || "",

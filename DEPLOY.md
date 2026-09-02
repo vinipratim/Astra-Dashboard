@@ -40,6 +40,22 @@ https://seu-dominio.com/api/auth/callback
 
 O valor precisa ser exatamente igual ao `DISCORD_REDIRECT_URI`.
 
+## Vercel
+
+O projeto tem um `server.js` na raiz. A Vercel detecta esse entrypoint Node.js e roteia as requisicoes para ele.
+
+1. Importe `viniprati/Astra-Dashboard` na Vercel.
+2. Em Framework Preset, use `Other`.
+3. Build Command: `npm run build`.
+4. Install Command: `npm install`.
+5. Configure as variaveis de ambiente.
+6. Depois do primeiro deploy, copie a URL final da Vercel.
+7. Configure `DISCORD_REDIRECT_URI` com `https://sua-url.vercel.app/api/auth/callback`.
+8. Adicione o mesmo redirect no Discord Developer Portal.
+9. Redeploy.
+
+Se `BASE_URL` nao for definido, o app usa `VERCEL_URL` automaticamente na Vercel. Mesmo assim, em producao com dominio proprio, prefira definir `BASE_URL`.
+
 ## Railway
 
 O projeto tem `Dockerfile`, entao o Railway consegue subir como container.
