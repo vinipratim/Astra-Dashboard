@@ -180,8 +180,15 @@ function renderMetricCards() {
 
 function renderLineChart() {
   const svg = document.querySelector("#eventsChart");
-  const data = currentMetrics.events.values.length ? currentMetrics.events.values : [0];
-  const labels = currentMetrics.events.labels.length ? currentMetrics.events.labels : ["sem dados"];
+  const rawValues = Array.isArray(currentMetrics.events?.values) ? currentMetrics.events.values : [];
+  const rawLabels = Array.isArray(currentMetrics.events?.labels) ? currentMetrics.events.labels : [];
+  const data = rawValues.length
+    ? rawValues.map((value) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+    })
+    : [0];
+  const labels = rawLabels.length ? rawLabels : ["sem dados"];
   const max = Math.max(...data, 1) * 1.12;
   const width = 920;
   const height = 300;
