@@ -1,0 +1,19 @@
+{
+  "name": "astra-metrics",
+  "version": "1.0.0",
+  "description": "Dashboard de métricas do AstraBot com Discord OAuth2 e PostHog.",
+  "main": "server.js",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js",
+    "check": "find . -path './node_modules' -prune -o -name '*.js' -print0 | xargs -0 -n1 node --check",
+    "build": "npm run check",
+    "doctor": "node scripts/doctor.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {}
+}
