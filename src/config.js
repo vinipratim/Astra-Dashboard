@@ -61,10 +61,14 @@ function number(name, defaultValue) {
 }
 
 function splitList(value) {
-  return String(value || "")
+  return [...new Set(String(value || "")
     .split(",")
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter(Boolean))];
+}
+
+function invalidDiscordUserIds(ids) {
+  return ids.filter((id) => !/^\d{15,25}$/.test(id));
 }
 
 loadDotEnv();
@@ -134,6 +138,12 @@ function validateRuntimeConfig() {
 
   if (env.AUTH_REQUIRED && env.ALLOWED_DISCORD_USER_IDS.length === 0) {
     errors.push("ALLOWED_DISCORD_USER_IDS precisa ter pelo menos um ID Discord permitido.");
+  }
+
+  const invalidIds = invalidDiscordUserIds(env.ALLOWED_DISCORD_USER_IDS);
+
+  if (env.AUTH_REQUIRED && invalidIds.length > 0) {
+    errors.push("ALLOWED_DISCORD_USER_IDS contém IDs Discord inválidos.");
   }
 
   return errors;
