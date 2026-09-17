@@ -47,7 +47,7 @@ function demoMetrics(range = "7d") {
     events: { labels, values },
     commands,
     health: [
-      { name: "PostHog", state: "demo", meta: "configure as variáveis" },
+      { name: "PostHog", state: "demo", meta: "dados demo" },
       { name: "Discord OAuth", state: "ok", meta: "sessão ativa" },
       { name: "API dashboard", state: "online", meta: "Node HTTP" },
       { name: "Fonte", state: "demo", meta: "sem token PostHog" },

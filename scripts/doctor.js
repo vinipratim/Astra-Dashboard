@@ -15,12 +15,12 @@ function addCheck(name, ok, message) {
 addCheck("NODE_ENV", env.NODE_ENV === "production", `atual: ${env.NODE_ENV}`);
 addCheck("BASE_URL", /^https:\/\//.test(env.BASE_URL), `atual: ${env.BASE_URL}`);
 addCheck("Discord redirect HTTPS", !env.DISCORD_REDIRECT_URI || /^https:\/\//.test(env.DISCORD_REDIRECT_URI), `atual: ${getRedirectUri()}`);
-addCheck("SESSION_SECRET", env.SESSION_SECRET.length >= 32, "use uma string longa e aleatória");
-addCheck("Discord OAuth", isDiscordConfigured(), "configure DISCORD_CLIENT_ID e DISCORD_CLIENT_SECRET");
-addCheck("Usuários permitidos", env.ALLOWED_DISCORD_USER_IDS.length > 0, "configure ALLOWED_DISCORD_USER_IDS");
-addCheck("PostHog query", isPostHogConfigured(), "configure POSTHOG_PROJECT_ID e POSTHOG_PERSONAL_API_KEY");
+addCheck("SESSION_SECRET", env.SESSION_SECRET.length >= 32, "valor ausente ou curto");
+addCheck("Discord OAuth", isDiscordConfigured(), "credenciais ausentes");
+addCheck("Usuários permitidos", env.ALLOWED_DISCORD_USER_IDS.length > 0, "lista vazia");
+addCheck("PostHog query", isPostHogConfigured(), "credenciais ausentes");
 
-console.log("Astra Metrics deploy doctor\n");
+console.log("Astra Metrics check\n");
 
 for (const check of checks) {
   const marker = check.ok ? "OK " : "ERR";
@@ -28,7 +28,7 @@ for (const check of checks) {
 }
 
 console.log(`\nDiscord redirect URI: ${getRedirectUri()}`);
-console.log("Bot token: nao use aqui; ele fica somente no bot.");
+console.log("Bot token: ausente do dashboard.");
 
 const errors = validateRuntimeConfig();
 

@@ -73,11 +73,11 @@ function showLoginWall(me) {
   document.body.classList.add("locked");
 
   if (!me.discordConfigured) {
-    hint.textContent = "Configure DISCORD_CLIENT_ID e DISCORD_CLIENT_SECRET no backend.";
+    hint.textContent = "Login indisponível.";
   } else if (authError === "denied") {
     hint.textContent = "Sua conta Discord não está na lista de usuários permitidos.";
   } else if (authError === "invalid") {
-    hint.textContent = "Sessão OAuth inválida ou expirada. Tente novamente.";
+    hint.textContent = "Sessão OAuth inválida ou expirada.";
   } else if (authError === "failed") {
     hint.textContent = "Falha ao concluir login com Discord.";
   } else {
@@ -156,9 +156,9 @@ async function loadMetrics(periodKey) {
       return;
     }
 
-    setConnection("API com erro", "veja logs do backend", true);
+    setConnection("API com erro", "falha ao carregar", true);
     document.querySelector("#sourceNotice").hidden = false;
-    document.querySelector("#sourceNotice").textContent = "Não consegui carregar métricas. Veja o terminal do backend.";
+    document.querySelector("#sourceNotice").textContent = "Não consegui carregar métricas.";
   }
 }
 
