@@ -264,7 +264,7 @@ async function handleApi(req, res, url, requestId) {
 
   if (url.pathname === "/api/auth/logout") {
     redirect(res, "/", {
-      "Set-Cookie": clearCookie(SESSION_COOKIE),
+      "Set-Cookie": [clearCookie(SESSION_COOKIE), clearCookie(STATE_COOKIE)],
     });
     return true;
   }
