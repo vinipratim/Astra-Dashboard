@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: astra-metrics
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_REQUIRED
+        value: true
+      - key: BASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_REDIRECT_URI
+        sync: false
+      - key: ALLOWED_DISCORD_USER_IDS
+        sync: false
+      - key: POSTHOG_HOST
+        value: https://us.posthog.com
+      - key: POSTHOG_PROJECT_ID
+        sync: false
+      - key: POSTHOG_PERSONAL_API_KEY
+        sync: false
