@@ -94,8 +94,13 @@ function cookie(name, value, maxAgeSeconds) {
     "Path=/",
     "HttpOnly",
     "SameSite=Lax",
+    "Priority=High",
     `Max-Age=${maxAgeSeconds}`,
   ];
+
+  if (maxAgeSeconds === 0) {
+    parts.push("Expires=Thu, 01 Jan 1970 00:00:00 GMT");
+  }
 
   if (secure) {
     parts.push("Secure");
