@@ -23,6 +23,7 @@ const {
 const { getMetrics } = require("./posthog");
 
 const publicDir = path.join(process.cwd(), "public");
+const metricRanges = new Set(["7d", "30d", "90d"]);
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -200,6 +201,12 @@ function isAllowedUser(userId) {
   return env.ALLOWED_DISCORD_USER_IDS.includes(userId);
 }
 
+function getMetricRange(url) {
+  const range = url.searchParams.get("range") || "7d";
+
+  return metricRanges.has(range) ? range : null;
+}
+
 async function handleApi(req, res, url, requestId) {
   if (url.pathname === "/api/health") {
     sendJson(res, 200, {
@@ -300,7 +307,17 @@ async function handleApi(req, res, url, requestId) {
       return true;
     }
 
-    const range = url.searchParams.get("range") || "7d";
+    const range = getMetricRange(url);
+
+    if (!range) {
+      sendJson(res, 400, {
+        ok: false,
+        error: "invalid_range",
+        allowedRanges: [...metricRanges],
+      });
+      return true;
+    }
+
     const metrics = await getMetrics(range, requestId);
     sendJson(res, 200, metrics);
     return true;
