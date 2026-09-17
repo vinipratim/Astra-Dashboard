@@ -187,6 +187,7 @@ function renderLineChart() {
   const height = 300;
   const pad = 38;
   const step = data.length > 1 ? (width - pad * 2) / (data.length - 1) : 0;
+  const labelEvery = Math.max(1, Math.ceil(data.length / 12));
   const barWidth = Math.max(10, Math.min(28, step * 0.45 || 22));
   const points = data.map((value, index) => {
     const x = data.length > 1 ? pad + index * step : width / 2;
@@ -214,7 +215,9 @@ function renderLineChart() {
     <polyline points="${line}" fill="none" stroke="#173ea5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
     ${points.map(([x, y, value], index) => `
       <circle cx="${x}" cy="${y}" r="3" fill="#fff" stroke="#173ea5" stroke-width="2" />
-      <text x="${x}" y="${height - 10}" text-anchor="middle" fill="#5e625d" font-size="11">${escapeHtml(labels[index] || "")}</text>
+      ${index % labelEvery === 0 || index === points.length - 1
+        ? `<text x="${x}" y="${height - 10}" text-anchor="middle" fill="#5e625d" font-size="11">${escapeHtml(labels[index] || "")}</text>`
+        : ""}
     `).join("")}
   `;
 }
