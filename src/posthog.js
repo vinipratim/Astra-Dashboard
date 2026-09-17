@@ -60,9 +60,20 @@ async function posthogQuery(query, name, requestId) {
 }
 
 async function posthogQueryOrEmpty(query, name, requestId) {
+  const startedAt = Date.now();
+
   try {
+    const rows = await posthogQuery(query, name, requestId);
+    logger.info({
+      event: "posthog_query_part_succeeded",
+      requestId,
+      queryName: name,
+      durationMs: Date.now() - startedAt,
+      rowCount: rows.length,
+    }, "posthog query part succeeded");
+
     return {
-      rows: await posthogQuery(query, name, requestId),
+      rows,
       error: null,
     };
   } catch (error) {
@@ -70,6 +81,7 @@ async function posthogQueryOrEmpty(query, name, requestId) {
       event: "posthog_query_part_failed",
       requestId,
       queryName: name,
+      durationMs: Date.now() - startedAt,
       error: error.message,
     }, "posthog query part failed");
 
